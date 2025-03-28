@@ -130,6 +130,7 @@ public class LoginManager extends JFrame {
         // Validación de fortaleza de contraseña
         if(password.isEmpty() || password.length() < 6){
             JOptionPane.showMessageDialog(this, "El campo no puede estar vacío o debe tener más de 6 carácteres.");
+            return;
         }
         
         // Intento de registro
