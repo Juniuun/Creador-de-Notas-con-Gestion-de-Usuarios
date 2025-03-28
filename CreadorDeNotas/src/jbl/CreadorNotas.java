@@ -1,120 +1,107 @@
 package jbl;
 
-// Imports necesarios para la aplicación
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.nio.file.*;
 
-// Clase CreadorNotas que extiende JFrame para crear una aplicación de escritorio
 public class CreadorNotas extends JFrame {
+    // Componentes de la interfaz
     private JTextField txtTitulo;
     private JTextArea txtContenido;
     private JTextField txtBuscar;
     private JButton btnGuardar, btnEditar, btnEliminar, btnLimpiar, btnBuscar;
     private JList<String> listaNotas;
     private DefaultListModel<String> modeloNotas;
-    private final String directorioNotas = "Notas"; // Carpeta global
-    private String emailUsuario; // Email del usuario actual
+    private String emailUsuario;
+    private String directorioUsuario;
 
     public CreadorNotas(String email) {
         this.emailUsuario = email;
+        this.directorioUsuario = "Usuarios/" + email;
+        
+        // Configuración básica de la ventana
         setTitle("Creador de Notas - " + email);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(700, 500);
+        setSize(900, 500);
         setLocationRelativeTo(null);
 
-        // Crear carpeta global si no existe
-        new File(directorioNotas).mkdirs();
+        // Crear carpeta si no existe
+        new File(directorioUsuario).mkdirs();
 
-        // Inicializar componentes (igual que antes)
-        txtTitulo = new JTextField();
-        txtContenido = new JTextArea(5, 20);
+        // Inicialización de componentes
+        txtTitulo = new JTextField(20);
+        txtContenido = new JTextArea();
         txtBuscar = new JTextField(15);
         btnGuardar = new JButton("Guardar");
         btnEditar = new JButton("Editar");
         btnEliminar = new JButton("Eliminar");
         btnLimpiar = new JButton("Limpiar");
         btnBuscar = new JButton("Buscar");
+        
+        // Configuración del modelo de lista
         modeloNotas = new DefaultListModel<>();
         listaNotas = new JList<>(modeloNotas);
-        cargarNotasUsuario();
-
-        // Crear scroll panes para el área de contenido y la lista de notas
+        listaNotas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        
+        // Configuración de ScrollPanes
         JScrollPane scrollContenido = new JScrollPane(txtContenido);
         JScrollPane scrollLista = new JScrollPane(listaNotas);
+        scrollLista.setPreferredSize(new Dimension(200, 400));
+        scrollContenido.setPreferredSize(new Dimension(400, 400));
+        
+        // Configuración del panel principal
+        JPanel panelPrincipal = new JPanel(new BorderLayout(10, 10));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Etiquetas para los campos de texto
-        JLabel lblTitulo = new JLabel("Título:");
-        JLabel lblContenido = new JLabel("Contenido:");
-        JLabel lblBuscar = new JLabel("Buscar:");
+        // Configuración del panel izquierdo (lista de notas)
+        JPanel panelIzquierdo = new JPanel(new BorderLayout());
+        panelIzquierdo.setBorder(BorderFactory.createTitledBorder("Tus notas"));
+        panelIzquierdo.add(scrollLista, BorderLayout.CENTER);
+        
+        // Configuración del panel de búsqueda
+        JPanel panelBuscar = new JPanel(new BorderLayout(5, 5));
+        panelBuscar.add(new JLabel("Buscar:"), BorderLayout.WEST);
+        panelBuscar.add(txtBuscar, BorderLayout.CENTER);
+        panelBuscar.add(btnBuscar, BorderLayout.EAST);
+        panelIzquierdo.add(panelBuscar, BorderLayout.SOUTH);
 
-        // Crear la barra de menú
-        JMenuBar menuBar = new JMenuBar();
-        JMenu archivoMenu = new JMenu("Archivo");
-        JMenuItem salirItem = new JMenuItem("Salir");
-        salirItem.addActionListener(e -> System.exit(0)); // Acción para salir de la aplicación
-        archivoMenu.add(salirItem);
-        menuBar.add(archivoMenu);
-        setJMenuBar(menuBar);
+        // Configuración del panel derecho (editor)
+        JPanel panelDerecho = new JPanel(new BorderLayout(5, 5));
+        
+        // Configuración del panel del título
+        JPanel panelTitulo = new JPanel(new BorderLayout(5, 5));
+        panelTitulo.add(new JLabel("Título:"), BorderLayout.WEST);
+        panelTitulo.add(txtTitulo, BorderLayout.CENTER);
+        panelDerecho.add(panelTitulo, BorderLayout.NORTH);
+        
+        // Configuración del panel del contenido
+        JPanel panelContenido = new JPanel(new BorderLayout());
+        panelContenido.setBorder(BorderFactory.createTitledBorder("Contenido"));
+        panelContenido.add(scrollContenido, BorderLayout.CENTER);
+        panelDerecho.add(panelContenido, BorderLayout.CENTER);
+        
+        // Configuración del panel de botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        panelBotones.add(btnLimpiar);
+        panelBotones.add(btnGuardar);
+        panelBotones.add(btnEditar);
+        panelBotones.add(btnEliminar);
+        panelDerecho.add(panelBotones, BorderLayout.SOUTH);
 
-        // Configurar el layout de la ventana
-        GroupLayout layout = new GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setAutoCreateGaps(true);
-        layout.setAutoCreateContainerGaps(true);
+        // Ensamblado final de la interfaz
+        panelPrincipal.add(panelIzquierdo, BorderLayout.WEST);
+        panelPrincipal.add(panelDerecho, BorderLayout.CENTER);
 
-        // Configuración horizontal del layout
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                .addGroup(layout.createSequentialGroup()
-                    .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addComponent(lblTitulo)
-                        .addComponent(lblContenido)
-                        .addComponent(scrollLista))
-                    .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addComponent(txtTitulo)
-                        .addComponent(scrollContenido)
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(lblBuscar)
-                            .addComponent(txtBuscar)
-                            .addComponent(btnBuscar))))
-                .addGroup(layout.createSequentialGroup()
-                    .addComponent(btnLimpiar)
-                    .addComponent(btnGuardar)
-                    .addComponent(btnEditar)
-                    .addComponent(btnEliminar))
-        );
-
-        // Configuración vertical del layout
-        layout.setVerticalGroup(
-            layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblTitulo)
-                    .addComponent(txtTitulo))
-                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblContenido)
-                    .addComponent(scrollContenido))
-                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(scrollLista)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                            .addComponent(lblBuscar)
-                            .addComponent(txtBuscar)
-                            .addComponent(btnBuscar))))
-                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnLimpiar)
-                    .addComponent(btnGuardar)
-                    .addComponent(btnEditar)
-                    .addComponent(btnEliminar))
-        );
-
-        // Añadir listeners a los botones
+        // Asignación de listeners a los botones
         btnGuardar.addActionListener(e -> guardarNota());
         btnEditar.addActionListener(e -> editarNota());
         btnEliminar.addActionListener(e -> eliminarNota());
         btnLimpiar.addActionListener(e -> limpiarCampos());
         btnBuscar.addActionListener(e -> buscarNota());
+        
+        // Listener para doble clic en la lista
         listaNotas.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
@@ -122,16 +109,17 @@ public class CreadorNotas extends JFrame {
                 }
             }
         });
-
-        pack(); // Ajustar el tamaño de la ventana
+        
+        add(panelPrincipal);
+        cargarNotasUsuario(); // Carga las notas al iniciar
     }
 
-    // Método para guardar una nota
+    // Guarda una nueva nota en el directorio del usuario
     private void guardarNota() {
-        String titulo = txtTitulo.getText().trim(); // Prefijo único
+        String titulo = txtTitulo.getText().trim();
         String contenido = txtContenido.getText().trim();
         if (!titulo.isEmpty() && !contenido.isEmpty()) {
-            try (FileWriter writer = new FileWriter(directorioNotas + "/" + titulo + ".txt")) {
+            try (FileWriter writer = new FileWriter(directorioUsuario + "/" + titulo + ".txt")) {
                 writer.write(contenido);
                 modeloNotas.addElement(titulo);
                 limpiarCampos();
@@ -143,42 +131,41 @@ public class CreadorNotas extends JFrame {
         }
     }
     
+    // Edita una nota existente
     private void editarNota() {
-    String tituloOriginal = listaNotas.getSelectedValue(); // Título con prefijo
-    String tituloNuevo = txtTitulo.getText().trim();
-    String contenido = txtContenido.getText().trim();
+        String tituloOriginal = listaNotas.getSelectedValue();
+        String tituloNuevo = txtTitulo.getText().trim();
+        String contenido = txtContenido.getText().trim();
 
-    if (tituloOriginal != null && !contenido.isEmpty()) {
-        File notaOriginal = new File(directorioNotas + "/" + tituloOriginal + ".txt");
-        File notaNueva = new File(directorioNotas + "/" + tituloNuevo + ".txt");
+        if (tituloOriginal != null && !contenido.isEmpty()) {
+            File notaOriginal = new File(directorioUsuario + "/" + tituloOriginal + ".txt");
+            File notaNueva = new File(directorioUsuario + "/" + tituloNuevo + ".txt");
 
-        if (notaOriginal.exists()) {
-            try {
-                // Renombrar archivo si el título cambió
-                if (!tituloOriginal.equals(tituloNuevo)) {
-                    notaOriginal.renameTo(notaNueva);
+            if (notaOriginal.exists()) {
+                try {
+                    // Renombra el archivo si el título cambió
+                    if (!tituloOriginal.equals(tituloNuevo)) {
+                        notaOriginal.renameTo(notaNueva);
+                    }
+                    try (FileWriter writer = new FileWriter(notaNueva)) {
+                        writer.write(contenido);
+                        modeloNotas.removeElement(tituloOriginal);
+                        modeloNotas.addElement(tituloNuevo);
+                    }
+                } catch (IOException e) {
+                    JOptionPane.showMessageDialog(this, "Error al editar la nota.");
                 }
-                // Escribir contenido
-                try (FileWriter writer = new FileWriter(notaNueva)) {
-                    writer.write(contenido);
-                    modeloNotas.removeElement(tituloOriginal);
-                    modeloNotas.addElement(tituloNuevo);
-                }
-            } catch (IOException e) {
-                JOptionPane.showMessageDialog(this, "Error al editar la nota.");
+            } else {
+                JOptionPane.showMessageDialog(this, "La nota no existe.");
             }
-        } else {
-            JOptionPane.showMessageDialog(this, "La nota no existe.");
         }
     }
-}
 
-    // Método para editar una nota existente
+    // Carga todas las notas del usuario
     private void cargarNotasUsuario() {
         modeloNotas.clear();
-        File dir = new File(directorioNotas);
-        File[] archivos = dir.listFiles((d, name) -> 
-            name.startsWith("[Usuario_" + emailUsuario + "]"));
+        File dir = new File(directorioUsuario);
+        File[] archivos = dir.listFiles((d, name) -> name.endsWith(".txt"));
         if (archivos != null) {
             for (File archivo : archivos) {
                 modeloNotas.addElement(archivo.getName().replace(".txt", ""));
@@ -186,46 +173,45 @@ public class CreadorNotas extends JFrame {
         }
     }
 
-    // Método para eliminar una nota
+    // Elimina la nota seleccionada
     private void eliminarNota() {
-    String titulo = listaNotas.getSelectedValue(); // Ya incluye el prefijo
-    if (titulo != null) {
-        File nota = new File(directorioNotas + "/" + titulo + ".txt");
-        if (nota.delete()) {
-            modeloNotas.removeElement(titulo);
-        } else {
-            JOptionPane.showMessageDialog(this, "Error al eliminar la nota.");
+        String titulo = listaNotas.getSelectedValue();
+        if (titulo != null) {
+            File nota = new File(directorioUsuario + "/" + titulo + ".txt");
+            if (nota.delete()) {
+                modeloNotas.removeElement(titulo);
+            } else {
+                JOptionPane.showMessageDialog(this, "Error al eliminar la nota.");
+            }
         }
     }
-}
 
-    // Método para limpiar los campos de texto
+    // Limpia los campos de edición
     private void limpiarCampos() {
         txtTitulo.setText("");
         txtContenido.setText("");
     }
 
-    // Método para cargar una nota seleccionada
+    // Carga el contenido de la nota seleccionada
     private void cargarNota() {
-    String titulo = listaNotas.getSelectedValue(); // Con prefijo
-    if (titulo != null) {
-        File nota = new File(directorioNotas + "/" + titulo + ".txt");
-        try {
-            String contenido = new String(Files.readAllBytes(nota.toPath()));
-            // Mostrar solo el título sin prefijo en el JTextField
-            txtTitulo.setText(titulo.replace("[Usuario_" + emailUsuario + "] ", ""));
-            txtContenido.setText(contenido);
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error al cargar la nota.");
+        String titulo = listaNotas.getSelectedValue();
+        if (titulo != null) {
+            File nota = new File(directorioUsuario + "/" + titulo + ".txt");
+            try {
+                String contenido = new String(Files.readAllBytes(nota.toPath()));
+                txtTitulo.setText(titulo);
+                txtContenido.setText(contenido);
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Error al cargar la nota.");
+            }
         }
     }
-}
     
-    // Método para buscar notas por título
+    // Busca notas que contengan el término de búsqueda
     private void buscarNota() {
         String termino = txtBuscar.getText().trim().toLowerCase();
         modeloNotas.clear();
-        File dir = new File(directorioNotas);
+        File dir = new File(directorioUsuario);
         File[] archivos = dir.listFiles((d, name) -> name.toLowerCase().contains(termino));
         if (archivos != null) {
             for (File archivo : archivos) {
@@ -234,4 +220,3 @@ public class CreadorNotas extends JFrame {
         }
     }
 }
-
